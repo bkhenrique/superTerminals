@@ -42,10 +42,38 @@ impl ProcessManager {
         // Executar através de shell para ter acesso ao PATH completo
         #[cfg(unix)]
         let mut cmd = {
+            // Adicionar caminhos comuns ao PATH
+            let home = std::env::var("HOME").unwrap_or_else(|_| "/Users/ica".to_string());
+            let extra_paths = vec![
+                // Gerenciadores de versão (devem vir primeiro!)
+                format!("{}/.rbenv/shims", home),       // rbenv (Ruby)
+                format!("{}/.rvm/bin", home),           // rvm (Ruby)
+                format!("{}/.asdf/shims", home),        // asdf (multi-language)
+                format!("{}/.nodenv/shims", home),      // nodenv (Node)
+                format!("{}/.pyenv/shims", home),       // pyenv (Python)
+
+                // Ferramentas específicas
+                format!("{}/.bun/bin", home),           // Bun
+                format!("{}/.cargo/bin", home),         // Rust
+                format!("{}/.local/bin", home),         // Python, etc
+                format!("{}/Library/pnpm", home),       // pnpm global
+                format!("{}/.deno/bin", home),          // Deno
+
+                // Homebrew
+                "/opt/homebrew/bin".to_string(),        // Homebrew Apple Silicon (primeiro)
+                "/usr/local/bin".to_string(),           // Homebrew Intel
+            ];
+
+            let current_path = std::env::var("PATH").unwrap_or_default();
+            let new_path = format!("{}:{}", extra_paths.join(":"), current_path);
+
+            // Criar comando com PATH expandido
+            let full_command = format!("export PATH=\"{}\"; {}", new_path, command);
+
             let mut c = Command::new("/bin/zsh");
             c.arg("-l"); // Login shell para carregar .zshrc
             c.arg("-c");
-            c.arg(command);
+            c.arg(&full_command);
             c
         };
 
