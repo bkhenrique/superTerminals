@@ -35,17 +35,29 @@ impl ProcessManager {
             return Err("Process already running".to_string());
         }
 
-        let parts: Vec<&str> = command.split_whitespace().collect();
-        if parts.is_empty() {
+        if command.trim().is_empty() {
             return Err("Invalid command".to_string());
         }
 
-        let program = parts[0];
-        let args = &parts[1..];
+        // Executar através de shell para ter acesso ao PATH completo
+        #[cfg(unix)]
+        let mut cmd = {
+            let mut c = Command::new("/bin/zsh");
+            c.arg("-l"); // Login shell para carregar .zshrc
+            c.arg("-c");
+            c.arg(command);
+            c
+        };
 
-        let mut cmd = Command::new(program);
-        cmd.args(args)
-            .current_dir(path)
+        #[cfg(windows)]
+        let mut cmd = {
+            let mut c = Command::new("cmd");
+            c.arg("/C");
+            c.arg(command);
+            c
+        };
+
+        cmd.current_dir(path)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped());
 
