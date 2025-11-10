@@ -58,7 +58,12 @@ jobs:
       - name: Install frontend dependencies
         run: pnpm install
 
-      - name: Build application
+      - name: Build application (Windows)
+        if: matrix.platform.os == 'windows-latest'
+        run: pnpm tauri build
+
+      - name: Build application (macOS/Linux)
+        if: matrix.platform.os != 'windows-latest'
         run: pnpm tauri build --target ${{ matrix.platform.target }}
 
       - name: Upload artifacts (Windows)
@@ -67,8 +72,8 @@ jobs:
         with:
           name: SuperTerminals-${{ matrix.platform.name }}
           path: |
-            src-tauri/target/${{ matrix.platform.target }}/release/bundle/msi/*.msi
-            src-tauri/target/${{ matrix.platform.target }}/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/msi/*.msi
+            src-tauri/target/release/bundle/nsis/*.exe
 
       - name: Upload artifacts (macOS)
         if: matrix.platform.os == 'macos-latest'
